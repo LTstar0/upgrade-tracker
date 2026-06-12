@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客户升级记录管理 - 隐藏后台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--sf:#161a24;--sf2:#1e2433;--bd:#2a3148;--bda:#3d5af1;--ac:#3d5af1;--ac2:#00e5c3;--ac3:#f1a23d;--dg:#f15353;--tx:#e8ecf5;--tx2:#8892aa;--tx3:#5a6380;--ok:#3de89e;--wn:#f1d03d;--mn:'JetBrains Mono',monospace;--sn:'Noto Sans SC',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sn);background:var(--bg);color:var(--tx);min-height:100vh;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 26px;background:var(--sf);border-bottom:1px solid var(--bd)}
+.hdr-logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--dg),var(--ac3));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-txt{font-size:15px;font-weight:700;letter-spacing:.04em}
+.logo-sub{font-size:10px;color:var(--tx3);font-family:var(--mn);letter-spacing:.1em}
+.container{max-width:1000px;margin:30px auto;width:100%;padding:0 20px;}
+.table-wrap{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;text-align:left}
+th,td{padding:14px 18px;border-bottom:1px solid var(--bd)}
+th{font-size:12px;color:var(--tx3);font-weight:500;text-transform:uppercase;letter-spacing:1px}
+td{font-size:14px;color:var(--tx)}
+tr:last-child td{border-bottom:none}
+tr:hover{background:var(--sf2)}
+.btn{padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid transparent;background:var(--sf2);color:var(--tx2);transition:all 0.2s}
+.btn:hover{color:var(--tx);border-color:var(--tx2)}
+.btn.edit:hover{color:var(--ac);border-color:rgba(61,90,241,0.5);background:rgba(61,90,241,0.1)}
+.btn.del:hover{color:var(--dg);border-color:rgba(241,83,83,0.5);background:rgba(241,83,83,0.1)}
+/* Modal */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.mo.show{display:flex}
+.modal{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:26px;width:460px;max-width:95vw}
+.modal-ttl{font-size:15px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.mc{cursor:pointer;color:var(--tx3);font-size:20px;line-height:1;transition:color .14s}
+.mc:hover{color:var(--tx)}
+.mform{display:flex;flex-direction:column;gap:13px}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fl{font-size:11px;font-weight:500;color:var(--tx3);letter-spacing:.05em;text-transform:uppercase}
+.fi,.fsel,.fta{background:var(--sf2);border:1px solid var(--bd);border-radius:7px;color:var(--tx);font-family:var(--sn);font-size:13px;padding:9px 13px;outline:none;transition:border-color .16s;width:100%}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--ac)}
+.fta{min-height:75px;resize:vertical}
+.factions{display:flex;gap:10px;margin-top:18px}
+.btn-p{padding:10px 26px;background:var(--ac);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:background .16s}
+.btn-p:hover{background:#4d6af5}
+.btn-s{padding:10px 22px;background:transparent;color:var(--tx2);border:1px solid var(--bd);border-radius:7px;font-size:13px;cursor:pointer}
+.btn-s:hover{border-color:var(--tx2);color:var(--tx)}
+/* Toast */
+.toast{position:fixed;bottom:26px;right:26px;background:var(--sf2);border:1px solid var(--ac2);border-radius:9px;padding:12px 18px;font-size:13px;color:var(--ac2);z-index:200;transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center}
+.toast.show{transform:translateY(0);opacity:1}
+/* Auth Overlay */
+.auth-ov{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:opacity 0.3s}
+.auth-box{background:var(--sf);border:1px solid var(--bd);padding:30px;border-radius:14px;width:320px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+.auth-box h2{font-size:16px;margin-bottom:20px;color:var(--tx);font-weight:600}
+.auth-box .fi{margin-bottom:20px;text-align:center;letter-spacing:2px;font-family:var(--mn)}
+</style>
+</head>
+<body>
+
+<!-- Auth Overlay -->
+<div class="auth-ov" id="authOv">
+  <div class="auth-box">
+    <h2>🔒 请输入管理员密码</h2>
+    <input type="password" class="fi" id="authPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter') verifyPwd()">
+    <button class="btn-p" style="width:100%" onclick="verifyPwd()">解锁管理权限</button>
+  </div>
+</div>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    <div class="logo-icon">🛠</div>
+    <div>
+      <div class="logo-txt">超级管理后台</div>
+      <div class="logo-sub">ADMINISTRATION</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:26px;">
+    <a href="javascript:void(0)" onclick="switchAdminView('clients')" id="navClients" style="color:var(--ac2);text-decoration:none;font-size:14px;font-weight:600;border-bottom:2px solid var(--ac2);padding-bottom:4px;">👥 客户管理</a>
+    <a href="javascript:void(0)" onclick="switchAdminView('images')" id="navImages" style="color:var(--tx2);text-decoration:none;font-size:14px;font-weight:600;padding-bottom:4px;border-bottom:2px solid transparent;">📦 镜像列表</a>
+  </div>
+  <div>
+    <a href="/" style="color:var(--tx3);font-size:13px;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--ac2)'" onmouseout="this.style.color='var(--tx3)'">返回主页 ➔</a>
+  </div>
+</div>
+
+<div id="clientsView">
+<div class="container">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>客户名称</th>
+          <th>联系人</th>
+          <th>行业</th>
+          <th>当前版本</th>
+          <th style="text-align:right">操作</th>
+        </tr>
+      </thead>
+      <tbody id="clientTableBody">
+        <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:40px">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<div id="imagesView" style="display:none;">
+<div class="container">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+    <h2 style="font-size:16px;font-weight:600;">📦 产品镜像管理</h2>
+    <button class="btn-p" onclick="openImageModal()">＋ 新增镜像</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>名称及版本</th>
+          <th>发布类型</th>
+          <th>下载地址</th>
+          <th>配置指导说明</th>
+          <th style="text-align:right">操作</th>
+        </tr>
+      </thead>
+      <tbody id="imageTableBody">
+        <tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:40px">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- Records Modal -->
+<div class="mo" id="recordsModal">
+  <div class="modal" style="width:600px">
+    <div class="modal-ttl"><span id="recordsTitle">升级记录管理</span><span class="mc" onclick="closeRecordsModal()">×</span></div>
+    <div id="recordsList" style="max-height:400px;overflow-y:auto;margin-bottom:15px;">
+      <!-- list -->
+    </div>
+    <div class="factions" style="margin-top:0;">
+      <button class="btn-s" onclick="closeRecordsModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="mo" id="editModal">
+  <div class="modal">
+    <div class="modal-ttl"><span>修改客户信息</span><span class="mc" onclick="closeModal()">×</span></div>
+    <div class="mform">
+      <input type="hidden" id="editId">
+      <div class="fg"><label class="fl">客户名称 *</label><input class="fi" id="editName"></div>
+      <div class="fg"><label class="fl">所属行业</label>
+        <select class="fsel" id="editType">
+          <option value="finance">金融</option><option value="retail">零售</option>
+          <option value="medical">医疗</option><option value="edu">教育</option>
+          <option value="gov">政府</option><option value="other">其他</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">联系人</label><input class="fi" id="editContact"></div>
+      <div class="fg"><label class="fl">备注</label><textarea class="fta" id="editNote"></textarea></div>
+    </div>
+    <div class="factions">
+      <button class="btn-p" onclick="saveEdit()">保存修改</button>
+      <button class="btn-s" onclick="closeModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Modal -->
+<div class="mo" id="imageModal">
+  <div class="modal" style="width:600px;">
+    <div class="modal-ttl"><span id="imageModalTitle">新增产品镜像</span><span class="mc" onclick="closeImageModal()">×</span></div>
+    <div class="mform">
+      <input type="hidden" id="imgId">
+      <div style="display:flex;gap:15px;">
+        <div class="fg" style="flex:1"><label class="fl">镜像名称 *</label><input class="fi" id="imgName" placeholder="如：anybase"></div>
+        <div class="fg" style="flex:1"><label class="fl">版本号 *</label><input class="fi" id="imgVersion" placeholder="如：1.14.0"></div>
+        <div class="fg" style="width:100px"><label class="fl">类型</label>
+          <select class="fsel" id="imgType">
+            <option value="docker">Docker</option>
+            <option value="tarpkg">压缩包</option>
+            <option value="executable">可执行文件</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">公网下载地址 (如 OSS / Aliyun ACR)</label><textarea class="fta" id="imgPublicUrl" style="min-height:50px;"></textarea></div>
+      <div class="fg"><label class="fl">内网下载地址 (如 Harbor)</label><textarea class="fta" id="imgInternalUrl" style="min-height:50px;"></textarea></div>
+      <div class="fg"><label class="fl">配置/启动指导说明 (Docker run 命令等)</label><textarea class="fta" id="imgConfigGuide" style="min-height:70px;"></textarea></div>
+      <div class="fg"><label class="fl">附加说明 (Release Notes)</label><textarea class="fta" id="imgDescription" style="min-height:60px;"></textarea></div>
+    </div>
+    <div class="factions">
+      <button class="btn-p" onclick="saveImage()">保存</button>
+      <button class="btn-s" onclick="closeImageModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const typeLabels = {finance:'金融',retail:'零售',medical:'医疗',edu:'教育',gov:'政府',other:'其他'};
+let clients = [];
+let images = [];
+
+async function api(method, path, body) {
+  const opts = {method, headers:{'Content-Type':'application/json'}};
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.msg || '请求失败');
+  return json;
+}
+
+async function loadClients() {
+  try {
+    const res = await api('GET', '/api/clients');
+    clients = res.data || [];
+    renderTable();
+  } catch(e) {
+    toast('❌ 加载失败: ' + e.message, true);
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('clientTableBody');
+  if (clients.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:40px">暂无客户</td></tr>';
+    return;
+  }
+  tbody.innerHTML = clients.map(c => `
+    <tr>
+      <td style="color:var(--tx3);font-family:var(--mn)">${c.id}</td>
+      <td style="font-weight:500">${esc(c.name)}</td>
+      <td>${esc(c.contact) || '-'}</td>
+      <td><span style="font-size:11px;background:var(--sf2);padding:2px 8px;border-radius:12px;">${typeLabels[c.type] || '其他'}</span></td>
+      <td style="font-family:var(--mn);color:var(--ac2)">${esc(c.current_version)}</td>
+      <td style="text-align:right;gap:8px;display:flex;justify-content:flex-end;">
+        <button class="btn edit" onclick="openRecords(${c.id})">升级记录</button>
+        <button class="btn edit" onclick="openEdit(${c.id})">修改</button>
+        <button class="btn del" onclick="deleteClient(${c.id})">删除</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openEdit(id) {
+  const client = clients.find(c => c.id === id);
+  if (!client) return;
+  document.getElementById('editId').value = client.id;
+  document.getElementById('editName').value = client.name;
+  document.getElementById('editType').value = client.type;
+  document.getElementById('editContact').value = client.contact || '';
+  document.getElementById('editNote').value = client.note || '';
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+async function saveEdit() {
+  const id = document.getElementById('editId').value;
+  const name = document.getElementById('editName').value.trim();
+  if (!name) return toast('⚠️ 名称不能为空', true);
+  
+  try {
+    await api('PUT', `/api/clients/${id}`, {
+      name,
+      type: document.getElementById('editType').value,
+      contact: document.getElementById('editContact').value.trim(),
+      note: document.getElementById('editNote').value.trim()
+    });
+    toast('✓ 修改已保存');
+    closeModal();
+    loadClients(); // Reload
+  } catch(e) {
+    toast('❌ ' + e.message, true);
+  }
+}
+
+async function deleteClient(id) {
+  const client = clients.find(c => c.id === id);
+  if (!confirm(`确定要彻底删除客户 [${client.name}] 以及它的所有升级记录吗？此操作不可恢复。`)) return;
+  
+  try {
+    await api('DELETE', `/api/clients/${id}`);
+    toast('✓ 客户已删除');
+    loadClients();
+  } catch(e) {
+    toast('❌ ' + e.message, true);
+  }
+}
+
+async function openRecords(id) {
+  const client = clients.find(c => c.id === id);
+  if (!client) return;
+  document.getElementById('recordsTitle').textContent = `[${client.name}] - 升级记录管理`;
+  document.getElementById('recordsModal').classList.add('show');
+  document.getElementById('recordsList').innerHTML = '<div style="text-align:center;padding:20px;color:var(--tx3)">加载中...</div>';
+  
+  try {
+    const res = await api('GET', `/api/clients/${id}/upgrades`);
+    renderRecords(res.data || []);
+  } catch(e) {
+    document.getElementById('recordsList').innerHTML = `<div style="text-align:center;color:var(--dg)">${e.message}</div>`;
+  }
+}
+
+function renderRecords(records) {
+  const el = document.getElementById('recordsList');
+  if (records.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--tx3)">暂无记录</div>';
+    return;
+  }
+  el.innerHTML = records.map(r => `
+    <div style="background:var(--sf2);padding:14px;border-radius:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--bd);">
+      <div>
+        <div style="font-weight:600;color:var(--ac2);font-family:var(--mn);margin-bottom:6px;">${esc(r.version)}</div>
+        <div style="font-size:12px;color:var(--tx3);display:flex;gap:15px;">
+          <span>📅 ${r.upgrade_date}</span>
+          <span>👤 ${esc(r.operator)}</span>
+        </div>
+      </div>
+      <button class="btn del" onclick="deleteUpgrade(${r.id}, ${r.client_id})">删除记录</button>
+    </div>
+  `).join('');
+}
+
+function closeRecordsModal() {
+  document.getElementById('recordsModal').classList.remove('show');
+}
+
+async function deleteUpgrade(uid, clientId) {
+  if (!confirm('确定删除这条升级记录吗？')) return;
+  try {
+    await api('DELETE', `/api/clients/${clientId}/upgrades/${uid}`);
+    toast('✓ 记录已删除');
+    openRecords(clientId); // 重新加载该客户记录
+    loadClients(); // 重新加载客户列表以同步版本号
+  } catch(e) {
+    toast('❌ ' + e.message, true);
+  }
+}
+
+function toast(msg, warn=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.color = warn ? 'var(--wn)' : 'var(--ac2)';
+  el.style.borderColor = warn ? 'var(--wn)' : 'var(--ac2)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function verifyPwd() {
+  const p = document.getElementById('authPwd').value;
+  if (p === 'admin123') { // 这里定义了访问密码
+    const ov = document.getElementById('authOv');
+    ov.style.opacity = '0';
+    setTimeout(() => ov.style.display = 'none', 300);
+    loadClients();
+    loadImages();
+  } else {
+    toast('❌ 密码错误，请重试', true);
+  }
+}
+
+function switchAdminView(view) {
+  document.getElementById('clientsView').style.display = view === 'clients' ? 'block' : 'none';
+  document.getElementById('imagesView').style.display = view === 'images' ? 'block' : 'none';
+  
+  const navC = document.getElementById('navClients');
+  const navI = document.getElementById('navImages');
+  if(view === 'clients') {
+    navC.style.color = 'var(--ac2)'; navC.style.borderBottomColor = 'var(--ac2)';
+    navI.style.color = 'var(--tx2)'; navI.style.borderBottomColor = 'transparent';
+  } else {
+    navI.style.color = 'var(--ac2)'; navI.style.borderBottomColor = 'var(--ac2)';
+    navC.style.color = 'var(--tx2)'; navC.style.borderBottomColor = 'transparent';
+  }
+}
+
+// ============== Images Logic ==============
+async function loadImages() {
+  try {
+    const res = await api('GET', '/api/images');
+    images = res.data || [];
+    renderImageTable();
+  } catch(e) { toast('❌ 加载镜像失败: ' + e.message, true); }
+}
+
+function renderImageTable() {
+  const tbody = document.getElementById('imageTableBody');
+  if (images.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:40px">暂无产品镜像</td></tr>';
+    return;
+  }
+  tbody.innerHTML = images.map(img => `
+    <tr>
+      <td>
+        <div style="font-weight:600;color:var(--tx);">${esc(img.name)}</div>
+        <div style="font-family:var(--mn);color:var(--ac2);font-size:12px;margin-top:4px;">${esc(img.version)}</div>
+        ${img.description ? `<div style="font-size:11px;color:var(--tx3);margin-top:6px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(img.description)}</div>` : ''}
+      </td>
+      <td><span style="font-size:11px;background:var(--sf2);padding:2px 8px;border-radius:12px;">${esc(img.type)}</span></td>
+      <td style="font-family:var(--mn);font-size:11px;color:var(--tx2);max-width:260px;">
+        ${img.public_url ? `<div style="margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(img.public_url)}">🌐 ${esc(img.public_url)}</div>` : ''}
+        ${img.internal_url ? `<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(img.internal_url)}">🔒 ${esc(img.internal_url)}</div>` : ''}
+      </td>
+      <td style="max-width:200px;">
+        ${img.config_guide ? `
+          <button class="btn" style="background:rgba(61,90,241,0.1);color:var(--ac);" onclick="copyText(\`${esc(img.config_guide).replace(/`/g, '\\`')}\`)">📄 复制配置/命令</button>
+        ` : '-'}
+      </td>
+      <td style="text-align:right;">
+        <button class="btn edit" onclick="openImageModal(${img.id})">修改</button>
+        <button class="btn del" onclick="deleteImage(${img.id})">删除</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function copyText(txt) {
+  navigator.clipboard.writeText(txt).then(() => toast('✓ 已复制到剪贴板')).catch(() => toast('❌ 复制失败', true));
+}
+
+function openImageModal(id = null) {
+  const isEdit = id !== null;
+  document.getElementById('imageModalTitle').textContent = isEdit ? '修改产品镜像' : '新增产品镜像';
+  document.getElementById('imgId').value = isEdit ? id : '';
+  
+  if (isEdit) {
+    const img = images.find(i => i.id === id);
+    if (!img) return;
+    document.getElementById('imgName').value = img.name;
+    document.getElementById('imgVersion').value = img.version;
+    document.getElementById('imgType').value = img.type;
+    document.getElementById('imgPublicUrl').value = img.public_url;
+    document.getElementById('imgInternalUrl').value = img.internal_url;
+    document.getElementById('imgConfigGuide').value = img.config_guide;
+    document.getElementById('imgDescription').value = img.description;
+  } else {
+    document.getElementById('imgName').value = '';
+    document.getElementById('imgVersion').value = '';
+    document.getElementById('imgType').value = 'docker';
+    document.getElementById('imgPublicUrl').value = '';
+    document.getElementById('imgInternalUrl').value = '';
+    document.getElementById('imgConfigGuide').value = '';
+    document.getElementById('imgDescription').value = '';
+  }
+  
+  document.getElementById('imageModal').classList.add('show');
+}
+
+function closeImageModal() {
+  document.getElementById('imageModal').classList.remove('show');
+}
+
+async function saveImage() {
+  const id = document.getElementById('imgId').value;
+  const pl = {
+    name: document.getElementById('imgName').value.trim(),
+    version: document.getElementById('imgVersion').value.trim(),
+    type: document.getElementById('imgType').value,
+    public_url: document.getElementById('imgPublicUrl').value.trim(),
+    internal_url: document.getElementById('imgInternalUrl').value.trim(),
+    config_guide: document.getElementById('imgConfigGuide').value.trim(),
+    description: document.getElementById('imgDescription').value.trim()
+  };
+  
+  if (!pl.name || !pl.version) return toast('⚠️ 名称和版本不能为空', true);
+  
+  try {
+    if (id) {
+      await api('PUT', `/api/images/${id}`, pl);
+      toast('✓ 镜像已更新');
+    } else {
+      await api('POST', '/api/images', pl);
+      toast('✓ 镜像已新增');
+    }
+    closeImageModal();
+    loadImages();
+  } catch(e) { toast('❌ ' + e.message, true); }
+}
+
+async function deleteImage(id) {
+  if (!confirm('确定要删除这条产品镜像记录吗？')) return;
+  try {
+    await api('DELETE', `/api/images/${id}`);
+    toast('✓ 镜像已删除');
+    loadImages();
+  } catch(e) { toast('❌ ' + e.message, true); }
+}
+</script>
+</body>
+</html>

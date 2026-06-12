@@ -1,0 +1,15 @@
+# Build artifacts
+upgrade-tracker-server
+upgrade-tracker-server-linux-x86
+upgrade-tracker-release/
+*.tar.gz
+
+# Python virtual environment & cache
+venv/
+.venv/
+backend/venv/
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store

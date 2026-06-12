@@ -1,0 +1,11 @@
+server:
+  port: 18881
+
+database:
+  host:     192.168.3.234
+  port:     3306
+  user:     lcommon
+  password: [PASSWORD]
+  name:     upgrade_tracker
+  max_open: 20
+  max_idle: 5

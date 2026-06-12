@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客户升级记录管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--sf:#161a24;--sf2:#1e2433;--bd:#2a3148;--bda:#3d5af1;--ac:#3d5af1;--ac2:#00e5c3;--ac3:#f1a23d;--dg:#f15353;--tx:#e8ecf5;--tx2:#8892aa;--tx3:#5a6380;--ok:#3de89e;--wn:#f1d03d;--mn:'JetBrains Mono',monospace;--sn:'Noto Sans SC',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sn);background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+/* Header */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 26px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0}
+.hdr-logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-txt{font-size:15px;font-weight:700;letter-spacing:.04em}
+.logo-sub{font-size:10px;color:var(--tx3);font-family:var(--mn);letter-spacing:.1em}
+.hdr-stats{display:flex;gap:24px}
+.stat{text-align:center}
+.stat-n{font-family:var(--mn);font-size:19px;font-weight:600;color:var(--ac2)}
+.stat-l{font-size:11px;color:var(--tx3);margin-top:1px}
+/* Layout */
+.layout{display:flex;flex:1;overflow:hidden}
+/* Sidebar */
+.sb{width:288px;background:var(--sf);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
+.sb-hdr{padding:18px 18px 10px;border-bottom:1px solid var(--bd)}
+.sb-ttl{font-size:11px;font-weight:500;color:var(--tx3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.srch{display:flex;align-items:center;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:7px 11px;gap:7px;transition:border-color .2s}
+.srch:focus-within{border-color:var(--ac)}
+.srch input{background:none;border:none;outline:none;color:var(--tx);font-size:13px;width:100%;font-family:var(--sn)}
+.srch input::placeholder{color:var(--tx3)}
+.cl{flex:1;overflow-y:auto;padding:8px}
+.cl::-webkit-scrollbar{width:3px}
+.cl::-webkit-scrollbar-thumb{background:var(--bd);border-radius:4px}
+.cc{padding:13px;border-radius:10px;cursor:pointer;transition:all .16s;border:1px solid transparent;margin-bottom:5px}
+.cc:hover{background:var(--sf2);border-color:var(--bd)}
+.cc.active{background:rgba(61,90,241,.12);border-color:var(--ac)}
+.cc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.cc-name{font-size:13px;font-weight:500}
+.vbadge{font-family:var(--mn);font-size:11px;padding:2px 7px;border-radius:20px;background:rgba(0,229,195,.12);color:var(--ac2);border:1px solid rgba(0,229,195,.25)}
+.cc-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx3)}
+.td{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.add-btn{margin:8px;padding:10px;background:rgba(61,90,241,.08);border:1px dashed rgba(61,90,241,.4);border-radius:10px;color:var(--ac);font-size:13px;cursor:pointer;text-align:center;transition:all .18s;font-family:var(--sn)}
+.add-btn:hover{background:rgba(61,90,241,.15);border-color:var(--ac)}
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tx3);gap:10px}
+.empty-icon{font-size:44px;opacity:.35}
+.empty-txt{font-size:14px}
+/* Detail */
+.dv{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.dhdr{padding:20px 26px 16px;border-bottom:1px solid var(--bd);background:var(--sf);display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.dtitle{font-size:20px;font-weight:700;margin-bottom:5px}
+.dinfo{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ic{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2)}
+.cvbox{display:flex;align-items:center;gap:10px;background:rgba(0,229,195,.08);border:1px solid rgba(0,229,195,.2);border-radius:10px;padding:10px 16px;flex-shrink:0}
+.cvl{font-size:11px;color:var(--tx3);margin-bottom:2px}
+.cvv{font-family:var(--mn);font-size:18px;font-weight:600;color:var(--ac2)}
+/* Tabs */
+.tabs{display:flex;padding:0 26px;background:var(--sf);border-bottom:1px solid var(--bd)}
+.tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent;transition:all .16s;white-space:nowrap}
+.tab:hover{color:var(--tx2)}
+.tab.active{color:var(--ac);border-bottom-color:var(--ac)}
+/* Tab content */
+.tc{flex:1;overflow-y:auto;padding:22px 26px}
+.tc::-webkit-scrollbar{width:4px}
+.tc::-webkit-scrollbar-thumb{background:var(--bd);border-radius:4px}
+/* Timeline */
+.tl-item{display:flex;gap:18px;margin-bottom:6px}
+.tl-line{display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:4px}
+.tl-dot{width:11px;height:11px;border-radius:50%;background:var(--ac);border:2px solid var(--bg);z-index:1;flex-shrink:0}
+.tl-dot.latest{background:var(--ac2);box-shadow:0 0 7px rgba(0,229,195,.55)}
+.tl-conn{width:2px;flex:1;background:var(--bd);margin-top:3px;min-height:18px}
+.tl-card{flex:1;background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:16px 18px;margin-bottom:10px;transition:border-color .16s}
+.tl-card:hover{border-color:var(--bda)}
+.tl-card.latest{border-color:rgba(0,229,195,.3)}
+.tch{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tcv{font-family:var(--mn);font-size:15px;font-weight:600}
+.tcd{font-size:11px;color:var(--tx3);font-family:var(--mn)}
+.tco{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);margin-bottom:8px}
+.av{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--ac2));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.tag{font-size:11px;padding:2px 9px;border-radius:20px;font-family:var(--mn)}
+.t-feature{background:rgba(61,90,241,.15);color:#7a9af5;border:1px solid rgba(61,90,241,.3)}
+.t-fix{background:rgba(61,232,158,.1);color:var(--ok);border:1px solid rgba(61,232,158,.25)}
+.t-hotfix{background:rgba(241,83,83,.1);color:var(--dg);border:1px solid rgba(241,83,83,.25)}
+.t-config{background:rgba(241,162,61,.1);color:var(--ac3);border:1px solid rgba(241,162,61,.25)}
+.tcdesc{font-size:13px;color:var(--tx2);line-height:1.7}
+.tcfiles{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.fchip{display:flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mn);color:var(--tx3);background:var(--sf2);border:1px solid var(--bd);padding:3px 9px;border-radius:6px}
+.del-btn{font-size:11px;color:var(--tx3);cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s;border:1px solid transparent;margin-left:auto}
+.del-btn:hover{color:var(--dg);border-color:rgba(241,83,83,.3);background:rgba(241,83,83,.08)}
+/* Form */
+.form{background:var(--sf);border:1px solid var(--bd);border-radius:13px;padding:26px;max-width:740px}
+.form-ttl{font-size:15px;font-weight:600;margin-bottom:22px;display:flex;align-items:center;gap:8px}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.fg.full{grid-column:1/-1}
+.fl{font-size:11px;font-weight:500;color:var(--tx3);letter-spacing:.05em;text-transform:uppercase}
+.fi,.fsel,.fta{background:var(--sf2);border:1px solid var(--bd);border-radius:7px;color:var(--tx);font-family:var(--sn);font-size:13px;padding:9px 13px;outline:none;transition:border-color .16s;width:100%}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--ac)}
+.fi::placeholder,.fta::placeholder{color:var(--tx3)}
+.fsel option{background:var(--sf2)}
+.fta{min-height:95px;resize:vertical;line-height:1.7}
+.tag-sel{display:flex;gap:7px;flex-wrap:wrap}
+.tt{font-size:12px;padding:5px 13px;border-radius:20px;cursor:pointer;border:1px solid var(--bd);color:var(--tx3);background:var(--sf2);transition:all .14s;font-family:var(--mn)}
+.tt:hover{border-color:var(--tx3);color:var(--tx2)}
+.tt.sf{background:rgba(61,90,241,.15);color:#7a9af5;border-color:rgba(61,90,241,.5)}
+.tt.sx{background:rgba(61,232,158,.1);color:var(--ok);border-color:rgba(61,232,158,.4)}
+.tt.sh{background:rgba(241,83,83,.1);color:var(--dg);border-color:rgba(241,83,83,.4)}
+.tt.sc{background:rgba(241,162,61,.1);color:var(--ac3);border-color:rgba(241,162,61,.4)}
+.factions{display:flex;gap:10px;margin-top:22px}
+.btn-p{padding:10px 26px;background:var(--ac);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all .16s;font-family:var(--sn)}
+.btn-p:hover{background:#4d6af5;transform:translateY(-1px)}
+.btn-p:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-s{padding:10px 22px;background:transparent;color:var(--tx2);border:1px solid var(--bd);border-radius:7px;font-size:13px;cursor:pointer;transition:all .16s;font-family:var(--sn)}
+.btn-s:hover{border-color:var(--tx2);color:var(--tx)}
+/* Modal */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.mo.show{display:flex}
+.modal{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:26px;width:460px;max-width:95vw}
+.modal-ttl{font-size:15px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.mc{cursor:pointer;color:var(--tx3);font-size:20px;line-height:1;transition:color .14s}
+.mc:hover{color:var(--tx)}
+.mform{display:flex;flex-direction:column;gap:13px}
+/* Toast */
+.toast{position:fixed;bottom:26px;right:26px;background:var(--sf2);border:1px solid var(--ac2);border-radius:9px;padding:12px 18px;font-size:13px;color:var(--ac2);z-index:200;transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:8px}
+.toast.show{transform:translateY(0);opacity:1}
+.secl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:14px}
+.norec{text-align:center;padding:44px 20px;color:var(--tx3);font-size:13px}
+.loading{text-align:center;padding:44px;color:var(--tx3);font-size:13px}
+/* Image Center */
+.img-card { background:var(--sf); border:1px solid var(--bd); border-radius:12px; padding:20px; display:flex; flex-direction:column; gap:12px; transition:border-color .2s; }
+.img-card:hover { border-color:var(--ac); }
+.img-hdr { display:flex; justify-content:space-between; align-items:flex-start; }
+.img-title { font-size:16px; font-weight:600; color:var(--tx); display:flex; align-items:center; gap:10px; }
+.img-ver { font-family:var(--mn); font-size:13px; color:var(--ac2); background:rgba(0,229,195,0.1); padding:2px 8px; border-radius:12px; border:1px solid rgba(0,229,195,0.2); }
+.img-type { font-size:12px; color:var(--tx2); background:var(--sf2); padding:2px 8px; border-radius:12px; text-transform:uppercase; font-family:var(--mn); }
+.img-meta { font-size:13px; color:var(--tx2); background:var(--bg); border:1px solid var(--bd); border-radius:8px; padding:12px; }
+.img-meta pre { font-family:var(--mn); font-size:12px; color:var(--tx); white-space:pre-wrap; word-break:break-all; margin:0; }
+.img-meta-title { font-size:11px; font-weight:600; text-transform:uppercase; color:var(--tx3); margin-bottom:6px; letter-spacing:1px; }
+.img-actions { display:flex; gap:10px; margin-top:5px; }
+/* Image Center - Toolbar & Groups */
+.img-toolbar{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.img-search{display:flex;align-items:center;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:8px 14px;gap:8px;flex:1;max-width:320px;transition:border-color .2s}
+.img-search:focus-within{border-color:var(--ac)}
+.img-search input{background:none;border:none;outline:none;color:var(--tx);font-size:13px;width:100%;font-family:var(--sn)}
+.img-search input::placeholder{color:var(--tx3)}
+.img-filters{display:flex;gap:6px;flex-wrap:wrap}
+.img-filter-tab{font-size:12px;padding:6px 16px;border-radius:20px;cursor:pointer;border:1px solid var(--bd);color:var(--tx3);background:var(--sf);transition:all .18s;font-family:var(--sn);white-space:nowrap}
+.img-filter-tab:hover{border-color:var(--tx3);color:var(--tx2)}
+.img-filter-tab.active{background:rgba(61,90,241,.15);color:var(--ac);border-color:rgba(61,90,241,.5)}
+.img-group{margin-bottom:24px}
+.img-group-hdr{display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;user-select:none;border-bottom:1px solid var(--bd);margin-bottom:14px}
+.img-group-hdr:hover .img-group-title{color:var(--ac)}
+.img-group-arrow{font-size:12px;color:var(--tx3);transition:transform .25s;display:inline-block}
+.img-group-arrow.collapsed{transform:rotate(-90deg)}
+.img-group-title{font-size:16px;font-weight:600;color:var(--tx);transition:color .2s}
+.img-group-count{font-size:11px;color:var(--tx3);background:var(--sf2);padding:2px 8px;border-radius:10px;font-family:var(--mn)}
+.img-group-body{display:flex;flex-direction:column;gap:14px}
+.img-group-body.collapsed{display:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    <div class="logo-icon">🚀</div>
+    <div>
+      <div class="logo-txt">升级记录管理</div>
+      <div class="logo-sub">UPGRADE TRACKER · OPS</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:30px;align-items:center;">
+    <a href="javascript:void(0)" onclick="switchMainView('clients')" id="navClients" style="color:var(--ac2);text-decoration:none;font-size:15px;font-weight:600;border-bottom:2px solid var(--ac2);padding-bottom:4px;transition:all .2s;">👥 客户管理</a>
+    <a href="javascript:void(0)" onclick="switchMainView('images')" id="navImages" style="color:var(--tx2);text-decoration:none;font-size:15px;font-weight:600;padding-bottom:4px;border-bottom:2px solid transparent;transition:all .2s;">📦 镜像中心</a>
+  </div>
+  <div class="hdr-stats">
+    <div class="stat"><div class="stat-n" id="sClients">-</div><div class="stat-l">客户数量</div></div>
+    <div class="stat"><div class="stat-n" id="sUpgrades">-</div><div class="stat-l">升级总次数</div></div>
+    <div class="stat"><div class="stat-n" id="sMonth">-</div><div class="stat-l">本月升级</div></div>
+  </div>
+</div>
+
+<div class="layout" id="clientsView">
+  <div class="sb">
+    <div class="sb-hdr">
+      <div class="sb-ttl">客户列表</div>
+      <div class="srch">
+        <span>🔍</span>
+        <input type="text" id="srchInput" placeholder="搜索客户..." oninput="debounceSearch()">
+      </div>
+    </div>
+    <div class="cl" id="clientList"><div class="loading">加载中...</div></div>
+    <div class="add-btn" onclick="openAddClient()">＋ 新增客户</div>
+  </div>
+
+  <div class="main" id="main">
+    <div class="empty">
+      <div class="empty-icon">📋</div>
+      <div class="empty-txt">请在左侧选择客户</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout" id="imagesView" style="display:none;flex-direction:column;overflow-y:auto;padding:40px 20px;">
+  <div style="max-width:1050px;margin:0 auto;width:100%;">
+    <div style="display:flex;align-items:center;margin-bottom:8px;gap:12px;">
+      <h2 style="font-size:22px;font-weight:700;">📦 产品镜像中心</h2>
+      <span style="font-size:13px;color:var(--tx3);">提供各大平台客户端和部署所需镜像的详细配置环境方案指南</span>
+    </div>
+    <div class="img-toolbar">
+      <div class="img-search">
+        <span>🔍</span>
+        <input type="text" id="imgSearchInput" placeholder="搜索镜像名称..." oninput="searchImgs()">
+      </div>
+      <div class="img-filters" id="imgFilters"></div>
+    </div>
+    <div id="pubImageList" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="loading">加载中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Client Modal -->
+<div class="mo" id="addModal">
+  <div class="modal">
+    <div class="modal-ttl"><span>新增客户</span><span class="mc" onclick="closeModal('addModal')">×</span></div>
+    <div class="mform">
+      <div class="fg"><label class="fl">客户名称 *</label><input class="fi" id="mName" placeholder="请输入客户名称"></div>
+      <div class="fg"><label class="fl">所属行业</label>
+        <select class="fsel" id="mType">
+          <option value="finance">金融</option><option value="retail">零售</option>
+          <option value="medical">医疗</option><option value="edu">教育</option>
+          <option value="gov">政府</option><option value="other">其他</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">联系人</label><input class="fi" id="mContact" placeholder="客户联系人"></div>
+      <div class="fg"><label class="fl">初始版本</label><input class="fi" id="mVersion" placeholder="如：v1.0.0"></div>
+      <div class="fg"><label class="fl">备注</label><textarea class="fta" id="mNote" style="min-height:65px" placeholder="客户备注..."></textarea></div>
+    </div>
+    <div class="factions" style="margin-top:18px">
+      <button class="btn-p" id="mSaveBtn" onclick="saveClient()">确认添加</button>
+      <button class="btn-s" onclick="closeModal('addModal')">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';  // same origin
+const typeLabels = {finance:'金融',retail:'零售',medical:'医疗',edu:'教育',gov:'政府',other:'其他'};
+const typeColors = {finance:'#3d5af1',retail:'#f1a23d',medical:'#3de89e',edu:'#e83df1',gov:'#f1d03d',other:'#8892aa'};
+const tagNames = {feature:'新功能',fix:'缺陷修复',hotfix:'紧急修复',config:'配置变更'};
+const tagCls = {feature:'t-feature',fix:'t-fix',hotfix:'t-hotfix',config:'t-config'};
+const ttCls = {feature:'sf',fix:'sx',hotfix:'sh',config:'sc'};
+
+let currentClientId = null;
+let activeTab = 'history';
+let selectedTags = [];
+let searchTimer = null;
+
+// ── API helpers ───────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = {method, headers:{'Content-Type':'application/json'}};
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.msg || '请求失败');
+  return json;
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+async function loadClients(q='') {
+  try {
+    const r = await api('GET', `/api/clients${q ? '?q='+encodeURIComponent(q) : ''}`);
+    renderSidebar(r.data, r.stats);
+  } catch(e) { toast('❌ ' + e.message, true); }
+}
+
+function renderSidebar(clients, stats) {
+  if (stats) {
+    document.getElementById('sClients').textContent = stats.total_clients;
+    document.getElementById('sUpgrades').textContent = stats.total_upgrades;
+    document.getElementById('sMonth').textContent = stats.month_upgrades;
+  }
+  const el = document.getElementById('clientList');
+  if (!clients || clients.length === 0) {
+    el.innerHTML = '<div class="norec">暂无客户</div>'; return;
+  }
+  el.innerHTML = clients.map(c => `
+    <div class="cc ${c.id === currentClientId ? 'active' : ''}" onclick="selectClient(${c.id})">
+      <div class="cc-top">
+        <div class="cc-name">${esc(c.name)}</div>
+        <div class="vbadge">${esc(c.current_version)}</div>
+      </div>
+      <div class="cc-meta">
+        <div class="td" style="background:${typeColors[c.type]||'#8892aa'}"></div>
+        <span>${typeLabels[c.type]||'其他'}</span>
+        ${c.contact ? '· '+esc(c.contact) : ''}
+        · ${c.upgrade_count} 次升级
+      </div>
+    </div>
+  `).join('');
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadClients(document.getElementById('srchInput').value.trim()), 300);
+}
+
+// ── Detail ────────────────────────────────────────────────────────────────────
+async function selectClient(id) {
+  currentClientId = id;
+  activeTab = 'history';
+  // highlight
+  document.querySelectorAll('.cc').forEach(el => el.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList && event.currentTarget.classList.add('active');
+  // re-render sidebar to reflect selection
+  loadClients(document.getElementById('srchInput').value.trim());
+  renderDetail(id);
+}
+
+async function renderDetail(id) {
+  const main = document.getElementById('main');
+  main.innerHTML = '<div class="empty"><div class="empty-icon" style="animation:none">⏳</div><div class="empty-txt">加载中...</div></div>';
+  try {
+    const [cr, ur] = await Promise.all([
+      api('GET', `/api/clients/${id}`),
+      api('GET', `/api/clients/${id}/upgrades`)
+    ]);
+    const c = cr.data;
+    const upgrades = ur.data;
+    main.innerHTML = `
+      <div class="dv">
+        <div class="dhdr">
+          <div>
+            <div class="dtitle">${esc(c.name)}</div>
+            <div class="dinfo">
+              <div class="ic">🏢 ${typeLabels[c.type]||'其他'}</div>
+              ${c.contact ? `<div class="ic">👤 ${esc(c.contact)}</div>` : ''}
+              ${c.note ? `<div class="ic">📝 ${esc(c.note)}</div>` : ''}
+              <div class="ic">📅 接入 ${c.created_at ? c.created_at.slice(0,10) : '-'}</div>
+            </div>
+          </div>
+          <div class="cvbox">
+            <div><div class="cvl">当前版本</div><div class="cvv">${esc(c.current_version)}</div></div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab ${activeTab==='history'?'active':''}" onclick="switchTab('history',${id},${JSON.stringify(upgrades).replace(/</g,'\\u003c')})">📜 升级历史 (${upgrades.length})</div>
+          <div class="tab ${activeTab==='new'?'active':''}" onclick="switchTab('new',${id})">➕ 新增升级记录</div>
+        </div>
+        <div class="tc" id="tabContent">
+          ${activeTab==='history' ? renderHistory(upgrades) : renderNewForm(id)}
+        </div>
+      </div>`;
+  } catch(e) {
+    main.innerHTML = `<div class="empty"><div class="empty-txt">加载失败: ${e.message}</div></div>`;
+  }
+}
+
+function switchTab(tab, id, upgrades) {
+  activeTab = tab;
+  const tc = document.getElementById('tabContent');
+  if (!tc) return;
+  // update tab styles
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.classList.toggle('active', (i===0&&tab==='history')||(i===1&&tab==='new'));
+  });
+  if (tab === 'history') {
+    if (upgrades) { tc.innerHTML = renderHistory(upgrades); return; }
+    // fetch fresh
+    api('GET', `/api/clients/${id}/upgrades`).then(r => tc.innerHTML = renderHistory(r.data)).catch(e => toast('❌'+e.message,true));
+  } else {
+    tc.innerHTML = renderNewForm(id);
+    selectedTags = [];
+  }
+}
+
+function renderHistory(upgrades) {
+  if (!upgrades || upgrades.length === 0) return '<div class="norec">暂无升级记录，点击「新增升级记录」开始添加</div>';
+  const sorted = [...upgrades].sort((a,b) => b.upgrade_date.localeCompare(a.upgrade_date) || b.id - a.id);
+  return `<div class="secl">变更时间线</div><div>${sorted.map((u,i) => `
+    <div class="tl-item">
+      <div class="tl-line">
+        <div class="tl-dot ${i===0?'latest':''}"></div>
+        ${i<sorted.length-1 ? '<div class="tl-conn"></div>' : ''}
+      </div>
+      <div class="tl-card ${i===0?'latest':''}">
+        <div class="tch">
+          <div class="tcv">${esc(u.version)} ${i===0?'<span style="font-size:11px;color:var(--ac2);font-family:var(--sn);margin-left:6px">✦ 当前</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="tcd">${u.upgrade_date}</div>
+            ${ (Date.now() - new Date(u.created_at || Date.now()).getTime() <= 3600000) ? `<div class="del-btn" onclick="deleteUpgrade(${u.id}, ${u.client_id})">撤回 (1h内)</div>` : '' }
+          </div>
+        </div>
+        <div class="tco"><div class="av">${u.operator[0]}</div>${esc(u.operator)}</div>
+        <div class="tags">${(u.tags||[]).map(t=>`<span class="tag ${tagCls[t]||''}">${tagNames[t]||t}</span>`).join('')}</div>
+        <div class="tcdesc">${esc(u.description)}</div>
+        ${u.files && u.files.length ? `<div class="tcfiles">${u.files.map(f=>`<div class="fchip">📦 ${esc(f)}</div>`).join('')}</div>` : ''}
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function renderNewForm(id) {
+  selectedTags = [];
+  const today = new Date().toISOString().split('T')[0];
+  return `<div class="form">
+    <div class="form-ttl">📋 填写本次升级信息</div>
+    <div class="fgrid">
+      <div class="fg"><label class="fl">升级版本号 *</label><input class="fi" id="fVer" placeholder="如：v3.3.0"></div>
+      <div class="fg"><label class="fl">升级日期 *</label><input class="fi" id="fDate" type="date" value="${today}"></div>
+      <div class="fg"><label class="fl">操作人员</label><input class="fi" id="fOp" placeholder="负责本次升级的运维人员"></div>
+      <div class="fg"><label class="fl">变更类型</label>
+        <div class="tag-sel">
+          ${['feature','fix','hotfix','config'].map(t=>`<div class="tt" id="tt-${t}" onclick="toggleTag('${t}')">${tagNames[t]}</div>`).join('')}
+        </div>
+      </div>
+      <div class="fg full"><label class="fl">升级说明 *</label><textarea class="fta" id="fDesc" placeholder="请描述本次升级的内容、影响范围、注意事项等..."></textarea></div>
+      <div class="fg full"><label class="fl">关联文件（多个用逗号分隔）</label><input class="fi" id="fFiles" placeholder="如：app-3.3.0.jar, config.xml"></div>
+    </div>
+    <div class="factions">
+      <button class="btn-p" id="submitBtn" onclick="submitUpgrade(${id})">✓ 保存升级记录</button>
+      <button class="btn-s" onclick="switchTab('history',${id})">取消</button>
+    </div>
+  </div>`;
+}
+
+function toggleTag(t) {
+  const el = document.getElementById('tt-'+t);
+  const i = selectedTags.indexOf(t);
+  if (i>=0) { selectedTags.splice(i,1); el.className='tt'; }
+  else { selectedTags.push(t); el.className=`tt ${ttCls[t]}`; }
+}
+
+async function submitUpgrade(clientId) {
+  const version = document.getElementById('fVer').value.trim();
+  const date = document.getElementById('fDate').value;
+  const operator = document.getElementById('fOp').value.trim() || '未知';
+  const desc = document.getElementById('fDesc').value.trim();
+  const filesRaw = document.getElementById('fFiles').value.trim();
+  if (!version) { toast('⚠️ 请填写版本号', true); return; }
+  if (!date) { toast('⚠️ 请选择升级日期', true); return; }
+  if (!desc) { toast('⚠️ 请填写升级说明', true); return; }
+  const files = filesRaw ? filesRaw.split(',').map(f=>f.trim()).filter(Boolean) : [];
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '保存中...';
+  try {
+    await api('POST', `/api/clients/${clientId}/upgrades`, {
+      version, upgrade_date: date, operator, tags: selectedTags, description: desc, files
+    });
+    toast('✓ 升级记录已保存');
+    activeTab = 'history';
+    renderDetail(clientId);
+    loadClients(document.getElementById('srchInput').value.trim());
+  } catch(e) {
+    toast('❌ ' + e.message, true);
+    btn.disabled = false; btn.textContent = '✓ 保存升级记录';
+  }
+}
+
+async function deleteUpgrade(uid, clientId) {
+  if (!confirm('这条记录是最近1小时内新增的，确定要撤回并删除吗？')) return;
+  try {
+    await api('DELETE', `/api/clients/${clientId}/upgrades/${uid}`);
+    toast('✓ 记录已撤回');
+    renderDetail(clientId);
+    loadClients(document.getElementById('srchInput').value.trim());
+  } catch(e) { toast('❌ ' + e.message, true); }
+}
+
+// ── Add Client ────────────────────────────────────────────────────────────────
+function openAddClient() {
+  ['mName','mContact','mVersion','mNote'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('addModal').classList.add('show');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+async function saveClient() {
+  const name = document.getElementById('mName').value.trim();
+  if (!name) { toast('⚠️ 请输入客户名称', true); return; }
+  const btn = document.getElementById('mSaveBtn');
+  btn.disabled=true; btn.textContent='保存中...';
+  try {
+    const r = await api('POST', '/api/clients', {
+      name,
+      type: document.getElementById('mType').value,
+      contact: document.getElementById('mContact').value.trim(),
+      note: document.getElementById('mNote').value.trim(),
+      current_version: document.getElementById('mVersion').value.trim() || 'v1.0.0',
+    });
+    closeModal('addModal');
+    toast('✓ 客户已添加');
+    await loadClients();
+    selectClient(r.data.id);
+  } catch(e) { toast('❌ ' + e.message, true); }
+  finally { btn.disabled=false; btn.textContent='确认添加'; }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, warn=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.color = warn ? 'var(--wn)' : 'var(--ac2)';
+  el.style.borderColor = warn ? 'var(--wn)' : 'var(--ac2)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Images Logic ──────────────────────────────────────────────────────────────
+window.pubImgs = [];
+
+function switchMainView(v) {
+  document.getElementById('clientsView').style.display = v === 'clients' ? 'flex' : 'none';
+  document.getElementById('imagesView').style.display = v === 'images' ? 'flex' : 'none';
+  const nc = document.getElementById('navClients');
+  const ni = document.getElementById('navImages');
+  if (v === 'clients') {
+    nc.style.color = 'var(--ac2)'; nc.style.borderBottomColor = 'var(--ac2)';
+    ni.style.color = 'var(--tx2)'; ni.style.borderBottomColor = 'transparent';
+  } else {
+    ni.style.color = 'var(--ac2)'; ni.style.borderBottomColor = 'var(--ac2)';
+    nc.style.color = 'var(--tx2)'; nc.style.borderBottomColor = 'transparent';
+    loadPublicImages();
+  }
+}
+
+async function loadPublicImages() {
+  const el = document.getElementById('pubImageList');
+  if (window.pubImgs.length === 0) el.innerHTML = '<div class="loading">加载中...</div>';
+  try {
+    const res = await api('GET', '/api/images');
+    window.pubImgs = res.data || [];
+    renderImgFilters();
+    renderPublicImages();
+  } catch(e) {
+    el.innerHTML = `<div class="norec" style="color:var(--dg)">加载失败: ${e.message}</div>`;
+  }
+}
+
+let imgFilter = 'all';
+let imgQuery = '';
+let collapsedGroups = new Set();
+
+function renderImgFilters() {
+  const el = document.getElementById('imgFilters');
+  const types = {};
+  window.pubImgs.forEach(img => { types[img.type] = (types[img.type] || 0) + 1; });
+  const typeMap = {docker:'Docker', tarpkg:'压缩包', executable:'可执行文件'};
+  let html = `<div class="img-filter-tab ${imgFilter==='all'?'active':''}" data-type="all" onclick="setImgFilter('all')">全部 (${window.pubImgs.length})</div>`;
+  Object.keys(types).sort().forEach(t => {
+    html += `<div class="img-filter-tab ${imgFilter===t?'active':''}" data-type="${t}" onclick="setImgFilter('${t}')">${typeMap[t]||t} (${types[t]})</div>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderPublicImages() {
+  const el = document.getElementById('pubImageList');
+  let imgs = [...window.pubImgs];
+  if (imgFilter !== 'all') imgs = imgs.filter(img => img.type === imgFilter);
+  if (imgQuery) {
+    const q = imgQuery.toLowerCase();
+    imgs = imgs.filter(img =>
+      (img.name && img.name.toLowerCase().includes(q)) ||
+      (img.description && img.description.toLowerCase().includes(q)) ||
+      (img.version && img.version.toLowerCase().includes(q))
+    );
+  }
+  if (imgs.length === 0) {
+    el.innerHTML = '<div class="norec">' + (window.pubImgs.length === 0 ? '暂无上架镜像' : '没有匹配的镜像') + '</div>';
+    return;
+  }
+  // Group by product name prefix
+  const groups = {};
+  imgs.forEach(img => {
+    const parts = img.name.split('-');
+    const key = parts.length > 1 ? parts[0] : img.name;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push({ img, idx: window.pubImgs.indexOf(img) });
+  });
+  const keys = Object.keys(groups).sort();
+  // Single group: no group headers
+  if (keys.length <= 1) {
+    el.innerHTML = groups[keys[0]].map(({img, idx}) => renderImageCard(img, idx)).join('');
+    return;
+  }
+  el.innerHTML = keys.map(key => {
+    const items = groups[key];
+    const collapsed = collapsedGroups.has(key);
+    const name = key.charAt(0).toUpperCase() + key.slice(1);
+    return `<div class="img-group">
+      <div class="img-group-hdr" onclick="toggleImgGroup('${key}')">
+        <span class="img-group-arrow ${collapsed?'collapsed':''}">▼</span>
+        <span class="img-group-title">${esc(name)}</span>
+        <span class="img-group-count">${items.length} 个镜像</span>
+      </div>
+      <div class="img-group-body ${collapsed?'collapsed':''}">
+        ${items.map(({img, idx}) => renderImageCard(img, idx)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderImageCard(img, i) {
+  return `<div class="img-card">
+    <div class="img-hdr">
+      <div class="img-title">
+        ${esc(img.name)} <span class="img-ver">${esc(img.version)}</span>
+        <span class="img-type">${esc(img.type)}</span>
+      </div>
+      <div style="font-size:12px;color:var(--tx3);">${img.updated_at ? img.updated_at.slice(0,10) : ''}</div>
+    </div>
+    ${img.description ? `<div style="font-size:13px;color:var(--tx2);">${esc(img.description)}</div>` : ''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;">
+      ${img.internal_url ? `
+      <div class="img-meta">
+        <div class="img-meta-title">🔒 内网下载地址</div>
+        <pre>${esc(img.internal_url)}</pre>
+        <div class="img-actions"><button class="btn-s" style="padding:4px 12px;font-size:11px;" onclick="copyText(window.pubImgs[${i}].internal_url)">复制仓库地址</button></div>
+      </div>` : ''}
+      ${img.public_url ? `
+      <div class="img-meta">
+        <div class="img-meta-title">🌐 公网下载及包地址</div>
+        <pre>${esc(img.public_url)}</pre>
+        <div class="img-actions"><button class="btn-s" style="padding:4px 12px;font-size:11px;" onclick="copyText(window.pubImgs[${i}].public_url)">复制包地址</button></div>
+      </div>` : ''}
+    </div>
+    ${img.config_guide ? `
+    <div class="img-meta" style="margin-top:2px;">
+      <div class="img-meta-title">📄 配置指导 / 环境说明</div>
+      <pre style="color:#a8b2c8;">${esc(img.config_guide)}</pre>
+      <div class="img-actions"><button class="btn-s" style="padding:4px 12px;font-size:11px;border-color:var(--ac);color:var(--ac);" onclick="copyText(window.pubImgs[${i}].config_guide)">一键复制内容</button></div>
+    </div>` : ''}
+  </div>`;
+}
+
+function toggleImgGroup(key) {
+  if (collapsedGroups.has(key)) collapsedGroups.delete(key);
+  else collapsedGroups.add(key);
+  renderPublicImages();
+}
+
+function setImgFilter(type) {
+  imgFilter = type;
+  document.querySelectorAll('.img-filter-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.type === type);
+  });
+  renderPublicImages();
+}
+
+function searchImgs() {
+  imgQuery = document.getElementById('imgSearchInput').value.trim();
+  renderPublicImages();
+}
+
+function copyText(txt) {
+  navigator.clipboard.writeText(txt).then(() => toast('✓ 已复制到剪贴板')).catch(() => toast('❌ 复制失败', true));
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadClients();
+</script>
+</body>
+</html>
